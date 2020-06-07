@@ -72,6 +72,13 @@ input, select, textarea {
 	appearance: none;
 }
 
+
+.mymagic {
+	padding: 0em 2em 0em 1em;
+	font-size: 13pt;
+	font-weight: bold;
+}
+
 /* Basic */
 
 	html {
@@ -83,7 +90,7 @@ input, select, textarea {
 	}
 
 	body {
-		background: #fff;
+		background: #e2e1e1;
 	}
 
 		body.is-preload *, body.is-preload *:before, body.is-preload *:after {
@@ -98,7 +105,7 @@ input, select, textarea {
 		}
 
 	body, input, select, textarea {
-		color: #a2a2a2;
+		color: #787878;
 		font-family: "Source Sans Pro", Helvetica, sans-serif;
 		font-size: 16pt;
 		font-weight: 400;
@@ -111,15 +118,9 @@ input, select, textarea {
 		-ms-transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 		transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 		border-bottom: dotted 1px;
-		color: #49bf9d;
+		color: #b22222;
 		text-decoration: none;
 	}
-
-		a:hover {
-			border-bottom-color: transparent;
-			color: #49bf9d !important;
-			text-decoration: none;
-		}
 
 	strong, b {
 		color: #787878;
@@ -132,10 +133,12 @@ input, select, textarea {
 
 	p {
 		margin: 0 0 2em 0;
+		text-align: justify;
+
 	}
 
 	h1, h2, h3, h4, h5, h6 {
-		color: #787878;
+		color: #821717;
 		font-weight: 400;
 		line-height: 1em;
 		margin: 0 0 1em 0;
@@ -159,11 +162,14 @@ input, select, textarea {
 	h3 {
 		font-size: 1.25em;
 		line-height: 1.5em;
+	    margin-top: -0.6em;
 	}
 
 	h4 {
+		color: #671010;
 		font-size: 1.1em;
 		line-height: 1.5em;
+	    margin-top: -1.0em;
 	}
 
 	h5 {
@@ -2116,7 +2122,8 @@ input, select, textarea {
 		}
 
 		.image.left, .image.right {
-			max-width: 40%;
+			max-width: 20%;
+
 		}
 
 			.image.left img, .image.right img {
@@ -2464,8 +2471,8 @@ input, select, textarea {
 		input[type="reset"]:hover,
 		input[type="button"]:hover,
 		.button:hover {
-			border-color: #49bf9d;
-			color: #49bf9d !important;
+			border-color: #b22222;
+			color: #b22222 !important;
 		}
 
 		input[type="submit"]:active,
@@ -2473,8 +2480,8 @@ input, select, textarea {
 		input[type="button"]:active,
 		.button:active {
 			background-color: rgba(73, 191, 157, 0.1);
-			border-color: #49bf9d;
-			color: #49bf9d !important;
+			border-color: #b22222;
+			color: #b22222 !important;
 		}
 
 		input[type="submit"].icon,
@@ -2517,8 +2524,8 @@ input, select, textarea {
 		input[type="reset"].primary,
 		input[type="button"].primary,
 		.button.primary {
-			background-color: #49bf9d;
-			border-color: #49bf9d;
+			background-color: #b22222;
+			border-color: #b22222;
 			color: #ffffff !important;
 		}
 
@@ -2526,16 +2533,16 @@ input, select, textarea {
 			input[type="reset"].primary:hover,
 			input[type="button"].primary:hover,
 			.button.primary:hover {
-				background-color: #5cc6a7;
-				border-color: #5cc6a7;
+				background-color: #e24242;
+				border-color: #e24242;
 			}
 
 			input[type="submit"].primary:active,
 			input[type="reset"].primary:active,
 			input[type="button"].primary:active,
 			.button.primary:active {
-				background-color: #3eb08f;
-				border-color: #3eb08f;
+				background-color: #b22222;
+				border-color: #b22222;
 			}
 
 		input[type="submit"].disabled, input[type="submit"]:disabled,
@@ -2567,7 +2574,7 @@ input, select, textarea {
 		}
 
 		.work-item p {
-			font-size: 0.8em;
+			font-size: 12pt;
 			line-height: 1.5em;
 			margin: 0;
 		}
@@ -2604,7 +2611,7 @@ input, select, textarea {
 		position: fixed;
 		text-align: right;
 		top: 0;
-		width: 35%;
+		width: 25%;
 	}
 
 		#header > * {
@@ -2640,7 +2647,7 @@ input, select, textarea {
 
 		#header .image.avatar {
 			margin: 0 0 1em 0;
-			width: 6.25em;
+			width: 8.25em;
 		}
 
 /* Footer */
@@ -2682,10 +2689,10 @@ input, select, textarea {
 /* Main */
 
 	#main {
-		margin-left: 35%;
+		margin-left: 30%;
 		max-width: 54em;
 		padding: 8em 4em 4em 4em;
-		width: calc(100% - 35%);
+		width: calc(100% - 30%);
 	}
 
 		#main > section {
@@ -3192,6 +3199,13 @@ input, select, textarea {
 					margin-top: -1em;
 				}
 
+		/* Mymagic */
+
+		.mymagic {
+			display:block;
+			padding: 2.25em 1.5em 0.25em 1.5em
+			font-size: 20em
+		}
 	}
 
 /* XSmall */
