@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galactic Orbit Families & Potential Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      user-select: none;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+    .glass-button {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.2s ease;
+    }
+    .glass-button:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+    .glass-button.active {
+      background: rgba(14, 165, 233, 0.25);
+      border-color: rgba(56, 189, 248, 0.8);
+      color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+
+    /* Light Theme Overrides */
+    body.light-mode {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    body.light-mode header,
+    body.light-mode aside {
+      background-color: rgba(241, 245, 249, 0.9) !important;
+      border-color: rgba(203, 213, 225, 0.8) !important;
+      color: #0f172a !important;
+    }
+    body.light-mode .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(203, 213, 225, 0.8);
+      color: #0f172a;
+    }
+    body.light-mode .glass-button {
+      background: rgba(241, 245, 249, 0.9);
+      border-color: rgba(203, 213, 225, 0.8);
+      color: #334155;
+    }
+    body.light-mode .glass-button:hover {
+      background: rgba(226, 232, 240, 1);
+      border-color: rgba(2, 132, 199, 0.5);
+      color: #0284c7;
+    }
+    body.light-mode .glass-button.active {
+      background: rgba(14, 165, 233, 0.15);
+      border-color: rgba(2, 132, 199, 0.8);
+      color: #0284c7;
+      box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+    }
+    body.light-mode input[type=number],
+    body.light-mode select {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.light-mode .text-slate-400 {
+      color: #64748b !important;
+    }
+    body.light-mode .text-slate-300 {
+      color: #475569 !important;
+    }
+    body.light-mode .text-slate-200,
+    body.light-mode .text-slate-100 {
+      color: #0f172a !important;
+    }
+    body.light-mode hr {
+      border-color: #e2e8f0 !important;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 1);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(30, 41, 59, 0.8);
+      height: 6px;
+      border-radius: 3px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body class="h-full w-full bg-slate-950 text-slate-100 flex flex-col antialiased">
+
+  <header class="h-14 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur px-4 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight text-slate-100 flex items-center gap-2">
+          Galactic Dynamics Visualizer
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Explore Orbit Families in Spherical, Axisymmetric, Triaxial & Rotating Bar Potentials</p>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="flex items-center space-x-2">
+      <button id="btn-toggle-theme" class="p-1.5 rounded-md glass-button text-slate-300 hover:text-cyan-400" title="Toggle Light/Dark Theme">
+        <svg id="icon-theme-dark" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="icon-theme-light" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
+      <button id="hdr-toggle-left" class="p-1.5 rounded-md glass-button text-slate-300 hover:text-cyan-400" title="Toggle Controls Panel">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+        </svg>
+      </button>
+
+      <button id="hdr-toggle-right" class="p-1.5 rounded-md glass-button text-slate-300 hover:text-cyan-400" title="Toggle Analytics Panel">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M12 12h8m-16 6h16"/>
+        </svg>
+      </button>
+
+      <div class="h-4 w-px bg-slate-800 mx-1"></div>
+
+      <button id="btn-play" class="px-3 py-1.5 rounded-md glass-button text-xs font-semibold flex items-center gap-1.5 text-emerald-400 border-emerald-500/30">
+        <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+        </svg>
+        <span id="label-play">Pause</span>
+      </button>
+
+      <button id="btn-step" class="px-2.5 py-1.5 rounded-md glass-button text-xs font-medium text-slate-300 hidden md:flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+        </svg>
+        Step
+      </button>
+
+      <button id="btn-reset" class="px-2.5 py-1.5 rounded-md glass-button text-xs font-medium text-slate-300 flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Reset
+      </button>
+
+      <button id="btn-theory-modal" class="px-3 py-1.5 rounded-md bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs font-semibold text-indigo-300 transition-all flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        Theory Guide
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <aside id="left-sidebar" class="w-80 border-r border-slate-800/80 bg-slate-900/80 backdrop-blur z-10 flex flex-col h-full transition-all duration-300 shrink-0">
+      <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Controls & Potential</span>
+        <button id="toggle-left-sidebar" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
+
+        <!-- Orbit Presets Section (Reordered: Spherical -> Axisymmetric -> Triaxial -> Barred -> Multi) -->
+        <div class="space-y-2">
+          <label class="block font-semibold text-slate-300">Orbit Family Presets</label>
+          <div class="grid grid-cols-1 gap-1.5">
+            <!-- 1. Spherical -->
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200 active" data-preset="spherical-rosette">
+              <div class="font-semibold text-cyan-400">Spherical: Rosette Orbit</div>
+              <div class="text-[10px] text-slate-400">In-plane precession in simple spherical logarithmic potential</div>
+            </button>
+            
+            <!-- 2. Axisymmetric -->
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="axisymmetric-box">
+              <div class="font-semibold text-amber-400">Axisymmetric: Box Orbit</div>
+              <div class="text-[10px] text-slate-400">Zero angular momentum L_z, fills R-z rectangular region</div>
+            </button>
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="axisymmetric-tube">
+              <div class="font-semibold text-emerald-400">Axisymmetric: Short-Axis Tube</div>
+              <div class="text-[10px] text-slate-400">Loops around z-axis with constant sign L_z</div>
+            </button>
+
+            <!-- 3. Triaxial -->
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="triaxial-box">
+              <div class="font-semibold text-purple-400">Triaxial: 3D Box Orbit</div>
+              <div class="text-[10px] text-slate-400">Passes near origin; fills a 3D rectangular box volume</div>
+            </button>
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="triaxial-sat">
+              <div class="font-semibold text-blue-400">Triaxial: Short-Axis Tube (SAT)</div>
+              <div class="text-[10px] text-slate-400">Circulates around shortest axis (z-axis)</div>
+            </button>
+
+            <!-- 4. Barred Presets (Now placed AFTER Triaxial Presets) -->
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="bar-x1">
+              <div class="font-semibold text-red-400 flex items-center justify-between">
+                <span>Barred: x₁ Orbit (Prograde)</span>
+              </div>
+              <div class="text-[10px] text-slate-400">Stable, elongated parallel to rotating bar major axis (x-axis)</div>
+            </button>
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="bar-x2">
+              <div class="font-semibold text-teal-400 flex items-center justify-between">
+                <span>Barred: x₂ Orbit (Perpendicular)</span>
+              </div>
+              <div class="text-[10px] text-slate-400">Perpendicular to bar (y-axis), inside Inner Lindblad Resonance</div>
+            </button>
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="bar-x4">
+              <div class="font-semibold text-indigo-400 flex items-center justify-between">
+                <span>Barred: x₄ Retrograde Orbit</span>
+              </div>
+              <div class="text-[10px] text-slate-400">Stable retrograde loop circulating opposite to bar rotation</div>
+            </button>
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="bar-chaos">
+              <div class="font-semibold text-rose-400 flex items-center justify-between">
+                <span>Barred: Corotation Chaos</span>
+              </div>
+              <div class="text-[10px] text-slate-400">Resonant orbital overlap & diffusion near corotation radius R_CR</div>
+            </button>
+
+            <!-- 5. Ensemble -->
+            <button class="preset-btn glass-button p-2 text-left rounded-md border text-slate-200" data-preset="multi-family">
+              <div class="font-semibold text-yellow-300">Multi-Particle Ensemble</div>
+              <div class="text-[10px] text-slate-400">Simulate multi-orbit family cloud simultaneously</div>
+            </button>
+          </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Potential Settings -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-200">Potential Parameters</span>
+            <span id="potential-type-tag" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono">Spherical Log</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Pattern Speed Ω<sub>p</sub>:</span>
+              <span id="val-omega" class="font-mono text-cyan-400">0.00</span>
+            </div>
+            <input id="slider-omega" type="range" min="0.00" max="1.00" step="0.01" value="0.00" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Axis Ratio q<sub>1</sub> (y/x):</span>
+              <span id="val-q1" class="font-mono text-cyan-400">1.00</span>
+            </div>
+            <input id="slider-q1" type="range" min="0.10" max="1.00" step="0.01" value="1.00" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Axis Ratio q<sub>2</sub> (z/x):</span>
+              <span id="val-q2" class="font-mono text-cyan-400">1.00</span>
+            </div>
+            <input id="slider-q2" type="range" min="0.10" max="1.00" step="0.01" value="1.00" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Core Radius (r<sub>c</sub>):</span>
+              <span id="val-rc" class="font-mono text-cyan-400">1.00</span>
+            </div>
+            <input id="slider-rc" type="range" min="0.1" max="5.0" step="0.1" value="1.00" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Velocity Scale (v<sub>0</sub>):</span>
+              <span id="val-v0" class="font-mono text-cyan-400">1.00</span>
+            </div>
+            <input id="slider-v0" type="range" min="0.2" max="3.0" step="0.1" value="1.00" class="w-full">
+          </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Simulation & Trail Settings -->
+        <div class="space-y-3">
+          <span class="font-semibold text-slate-200 block">Simulation & Trail Performance</span>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Particle Count:</span>
+              <span id="val-particles" class="font-mono text-cyan-400">1</span>
+            </div>
+            <input id="slider-particles" type="range" min="1" max="40" step="1" value="1" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Trail Length (pts):</span>
+              <span id="val-trail-len" class="font-mono text-cyan-400">30000</span>
+            </div>
+            <input id="slider-trail-len" type="range" min="500" max="50000" step="500" value="30000" class="w-full">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Integrator Timestep (dt):</span>
+              <span id="val-dt" class="font-mono text-cyan-400">0.030</span>
+            </div>
+            <input id="slider-dt" type="range" min="0.001" max="0.100" step="0.001" value="0.030" class="w-full">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="text-[11px] text-slate-400 block mb-1">Integrator</label>
+              <select id="select-integrator" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-slate-200 text-xs">
+                <option value="rk4" selected>RK4 (High Accuracy)</option>
+                <option value="verlet">Velocity Verlet</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-400 block mb-1">Trail Color Mode</label>
+              <select id="select-color-mode" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-slate-200 text-xs">
+                <option value="index">Particle Index</option>
+                <option value="speed">Speed (Heatmap)</option>
+                <option value="lz">Angular Momentum L_z</option>
+                <option value="lx">Angular Momentum L_x</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Initial Conditions Editor -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-200">Particle #1 Launch State</span>
+            <button id="btn-random-ic" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Randomize</button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="text-[10px] text-slate-400">Pos X</span>
+              <input id="input-x" type="number" step="0.1" value="2.5" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-cyan-300 font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400">Pos Y</span>
+              <input id="input-y" type="number" step="0.1" value="0.0" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-cyan-300 font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400">Pos Z</span>
+              <input id="input-z" type="number" step="0.1" value="0.0" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-cyan-300 font-mono text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="text-[10px] text-slate-400">Vel V<sub>x</sub></span>
+              <input id="input-vx" type="number" step="0.05" value="0.00" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-emerald-300 font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400">Vel V<sub>y</sub></span>
+              <input id="input-vy" type="number" step="0.05" value="0.65" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-emerald-300 font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400">Vel V<sub>z</sub></span>
+              <input id="input-vz" type="number" step="0.05" value="0.00" class="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-emerald-300 font-mono text-xs">
+            </div>
+          </div>
+
+          <button id="btn-apply-ic" class="w-full py-1.5 rounded bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-200 text-xs font-semibold">
+            Apply Initial State & Relaunch
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <main class="flex-1 relative bg-slate-950 flex flex-col overflow-hidden">
+      
+      <div id="canvas-container" class="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Floating Sidebar Reopen Handles -->
+      <button id="btn-open-left-sidebar" class="absolute left-0 top-1/2 -translate-y-1/2 glass-panel p-2.5 rounded-r-xl z-20 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/90 transition-all shadow-xl border-l-0 hidden flex items-center gap-1 group" title="Open Controls Panel">
+        <svg class="w-5 h-5 transition-transform group-hover:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+        </svg>
+      </button>
+
+      <button id="btn-open-right-sidebar" class="absolute right-0 top-1/2 -translate-y-1/2 glass-panel p-2.5 rounded-l-xl z-20 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/90 transition-all shadow-xl border-r-0 hidden flex items-center gap-1 group" title="Open Analytics Panel">
+        <svg class="w-5 h-5 transition-transform group-hover:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <!-- Viewport Floating HUD Top Overlay -->
+      <div class="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+        <!-- Live Metrics HUD -->
+        <div class="glass-panel px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-4 pointer-events-auto">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="fps-counter" class="text-slate-200 font-bold">60</span>
+            <span class="text-slate-400">FPS</span>
+          </div>
+          <div class="text-slate-400">Pts: <span id="hud-points" class="text-slate-200">0</span></div>
+          <div class="text-slate-400"><span id="hud-energy-label">Energy</span>: <span id="hud-energy" class="text-cyan-300">-0.421</span></div>
+          <div class="text-slate-400 hidden sm:block">ΔE/E₀: <span id="hud-drift" class="text-emerald-400">0.00%</span></div>
+        </div>
+
+        <!-- Frame View & Visual Overlays Toolbar -->
+        <div class="glass-panel p-1 rounded-lg flex items-center gap-1 pointer-events-auto">
+          <!-- Frame Mode Button: Visible ONLY when potential is rotating (Omega_p > 0) -->
+          <button id="btn-frame-mode" class="px-2.5 py-1 rounded text-[11px] font-semibold glass-button active flex items-center gap-1.5 hidden" title="Switch Reference Frame">
+            <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin" style="animation-duration: 4s;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span id="label-frame-mode">Frame: Corotating</span>
+          </button>
+          <div id="frame-sep" class="h-4 w-px bg-slate-700 my-auto mx-0.5 hidden"></div>
+
+          <button id="cam-free" class="px-2 py-1 rounded text-[11px] font-medium glass-button active">3D Orbit</button>
+          <button id="cam-xy" class="px-2 py-1 rounded text-[11px] font-medium glass-button">X-Y Plan</button>
+          <button id="cam-xz" class="px-2 py-1 rounded text-[11px] font-medium glass-button">X-Z Meridian</button>
+          <button id="cam-yz" class="px-2 py-1 rounded text-[11px] font-medium glass-button">Y-Z Side</button>
+          <div class="h-4 w-px bg-slate-700 my-auto mx-0.5"></div>
+
+          <!-- Bar Body Mesh Toggle Button: Visible ONLY when potential is rotating (Omega_p > 0) -->
+          <button id="toggle-bar-mesh" class="px-2 py-1 rounded text-[11px] font-medium glass-button active hidden" title="Toggle 3D Bar Mass Overlay">Bar Body</button>
+          <button id="toggle-wireframe" class="px-2 py-1 rounded text-[11px] font-medium glass-button active" title="Toggle Equipotential Wireframe">Potential</button>
+          <button id="toggle-axes" class="px-2 py-1 rounded text-[11px] font-medium glass-button active" title="Toggle Coordinate Axes">Axes</button>
+        </div>
+      </div>
+
+      <!-- Bottom Floating Legend / Status -->
+      <div class="absolute bottom-3 left-3 pointer-events-none z-10 hidden sm:block">
+        <div class="glass-panel px-3 py-1.5 rounded-lg text-xs text-slate-300 flex items-center gap-3">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-red-500 inline-block"></span> X (Major Axis)</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-green-500 inline-block"></span> Y (Intermediate)</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-500 inline-block"></span> Z (Rotation Axis)</span>
+          <span id="cr-indicator" class="flex items-center gap-1 text-amber-300 font-mono hidden"><span class="w-2 h-2 rounded-full border border-amber-400 inline-block"></span> R_CR ≈ <span id="cr-val">2.86</span></span>
+        </div>
+      </div>
+    </main>
+
+    <aside id="right-sidebar" class="w-80 border-l border-slate-800/80 bg-slate-900/80 backdrop-blur z-10 flex flex-col h-full transition-all duration-300 shrink-0">
+      <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Analytics & Phase Space</span>
+        <button id="toggle-right-sidebar" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
+
+        <!-- Real-Time Energy Monitor Plot -->
+        <div class="space-y-2">
+          <span class="font-semibold text-slate-200 block">Energy Monitor (E_k, E_p, E_tot)</span>
+          <div class="relative w-full h-32 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="energy-canvas" class="w-full h-full block"></canvas>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-amber-400">E_k: <span id="val-ek">0.20</span></span>
+            <span class="text-cyan-400">E_p: <span id="val-ep">-0.62</span></span>
+            <span class="text-emerald-400">E_tot: <span id="val-etot">-0.42</span></span>
+          </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Real-Time Angular Momentum Plot -->
+        <div class="space-y-2">
+          <span class="font-semibold text-slate-200 block">Angular Momentum Vectors</span>
+          <div class="relative w-full h-32 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="angular-canvas" class="w-full h-full block"></canvas>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[10px] font-mono text-center">
+            <div class="bg-slate-950 p-1 rounded border border-slate-800/80 text-red-400">L_x: <span id="val-lx">0.00</span></div>
+            <div class="bg-slate-950 p-1 rounded border border-slate-800/80 text-green-400">L_y: <span id="val-ly">0.00</span></div>
+            <div class="bg-slate-950 p-1 rounded border border-slate-800/80 text-blue-400">L_z: <span id="val-lz">1.62</span></div>
+          </div>
+        </div>
+        
+        <hr class="border-slate-800">
+        
+        <!-- Poincaré Surface of Section Canvas -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-200 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+              </svg>
+              Poincaré Section (z = 0)
+            </span>
+            <button id="btn-clear-poincare" class="text-[10px] text-slate-400 hover:text-slate-200 underline">Clear Section</button>
+          </div>
+          <p class="text-[11px] text-slate-400">Trajectory intersections with equatorial plane z=0 (v<sub>z</sub> &gt; 0)</p>
+          
+          <div class="relative w-full aspect-square bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="poincare-canvas" class="w-full h-full block"></canvas>
+          </div>
+
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+            <span>Points: <span id="poincare-count" class="text-cyan-300">0</span></span>
+            <select id="select-poincare-axis" class="bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-[10px] text-slate-200">
+              <option value="x-vx">x vs V_x</option>
+              <option value="r-vr">R vs V_R</option>
+              <option value="y-vy">y vs V_y</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Theory Guide Modal Container -->
+  <div id="theory-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-2xl w-full max-h-[85vh] rounded-xl flex flex-col p-5 shadow-2xl border border-slate-700">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+          Galactic Dynamics & Orbit Families Theory Guide
+        </h2>
+        <button id="close-theory-modal" class="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-4 text-xs text-slate-300 leading-relaxed pr-2">
+        <section class="space-y-2">
+          <h3 class="text-sm font-bold text-slate-100">1. Triaxial & Spherical Logarithmic Potential</h3>
+          <p>The visualizer models orbits in a generalized logarithmic potential given by:</p>
+          <div class="p-3 bg-slate-950 rounded border border-slate-800 font-mono text-cyan-300 text-center">
+            Φ(x, y, z) = ½ v₀² ln( r_c² + x² + y²/q₁² + z²/q₂² )
+          </div>
+          <p>When <span class="font-mono text-cyan-400">q₁ = 1</span> and <span class="font-mono text-cyan-400">q₂ = 1</span>, the potential reduces to the simple spherical logarithmic potential producing regular precessing rosette orbits.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h3 class="text-sm font-bold text-slate-100">2. Rotating Reference Frames & Jacobi Constant</h3>
+          <p>When the bar rotates with pattern speed $\vec{\Omega}_p = (0, 0, \Omega_p)$, the equations of motion in the corotating frame include Coriolis and centrifugal accelerations:</p>
+          <div class="p-3 bg-slate-950 rounded border border-slate-800 font-mono text-cyan-300 text-center text-[11px]">
+            a_x = -∂Φ/∂x + 2 Ω_p v_y + Ω_p² x<br>
+            a_y = -∂Φ/∂y - 2 Ω_p v_x + Ω_p² y<br>
+            a_z = -∂Φ/∂z
+          </div>
+          <p>In a steady rotating frame, individual kinetic energy is not conserved, but the <strong>Jacobi Integral ($E_J$)</strong> is strictly conserved:</p>
+          <div class="p-3 bg-slate-950 rounded border border-slate-800 font-mono text-emerald-300 text-center">
+            E_J = ½ (v_x² + v_y² + v_z²) + Φ(x,y,z) - ½ Ω_p² (x² + y²) = E_inertial - Ω_p L_z
+          </div>
+        </section>
+
+        <section class="space-y-2">
+          <h3 class="text-sm font-bold text-slate-100">3. Barred Orbit Families ($x_1, x_2, x_4$)</h3>
+          <p>In rotating barred potentials (Contopoulos & Papayannopoulos 1980), non-axisymmetric torques support key orbit families:</p>
+          <ul class="list-disc pl-5 space-y-1 text-slate-300">
+            <li><strong class="text-red-400">x₁ Family:</strong> Stable orbits elongated <em>parallel</em> to the bar ($x$-axis).</li>
+            <li><strong class="text-teal-400">x₂ Family:</strong> Stable orbits elongated <em>perpendicular</em> to the bar ($y$-axis), inside ILR.</li>
+            <li><strong class="text-indigo-400">x₄ Family:</strong> Stable retrograde loops circulating opposite to bar rotation.</li>
+            <li><strong class="text-rose-400">Corotation Chaos:</strong> Resonant overlap near corotation radius $R_{CR} = v_0 / \Omega_p$.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button id="btn-close-modal-bottom" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded text-xs transition">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      isPlaying: true,
+      potentialType: 'logarithmic',
+      omegaP: 0.00, // Default: Simple spherical potential (No rotation)
+      q1: 1.00,  // Spherical y/x ratio = 1.0
+      q2: 1.00,  // Spherical z/x ratio = 1.0
+      rc: 1.0,   // Core radius
+      v0: 1.0,   // Velocity scale
+      particleCount: 1,
+      maxTrailLength: 30000,
+      dt: 0.030,
+      integrator: 'rk4',
+      colorMode: 'index',
+      theme: 'dark',
+      frameMode: 'corotating',
+      showBarMesh: true,
+      showWireframe: true,
+      showAxes: true,
+      simTime: 0.0,
+      
+      // Default Spherical Rosette Launch IC
+      ic: { x: 2.5, y: 0.0, z: 0.0, vx: 0.0, vy: 0.65, vz: 0.0 },
+
+      particles: [],
+      poincarePoints: [],
+      poincareAxis: 'x-vx',
+      energyHistory: [],
+      angularHistory: [],
+      e0: null
+    };
+
+    // --- Potential & Acceleration Calculation ---
+    function getPotentialAndAccel(x, y, z, vx = 0, vy = 0, vz = 0) {
+      const q1_sq = state.q1 * state.q1;
+      const q2_sq = state.q2 * state.q2;
+      const rc_sq = state.rc * state.rc;
+      const v0_sq = state.v0 * state.v0;
+      const om_p = state.omegaP;
+
+      const m_sq = rc_sq + x * x + (y * y) / q1_sq + (z * z) / q2_sq;
+      const phi = 0.5 * v0_sq * Math.log(m_sq);
+
+      const ax_pot = - (v0_sq * x) / m_sq;
+      const ay_pot = - (v0_sq * y) / (q1_sq * m_sq);
+      const az_pot = - (v0_sq * z) / (q2_sq * m_sq);
+
+      // Rotating frame Coriolis and Centrifugal terms (zero when om_p = 0)
+      const ax = ax_pot + 2.0 * om_p * vy + om_p * om_p * x;
+      const ay = ay_pot - 2.0 * om_p * vx + om_p * om_p * y;
+      const az = az_pot;
+
+      return { phi, ax, ay, az };
+    }
+
+    function stepRK4(p, dt) {
+      function derivatives(x, y, z, vx, vy, vz) {
+        const res = getPotentialAndAccel(x, y, z, vx, vy, vz);
+        return [vx, vy, vz, res.ax, res.ay, res.az];
+      }
+
+      const [x, y, z, vx, vy, vz] = [p.x, p.y, p.z, p.vx, p.vy, p.vz];
+
+      const k1 = derivatives(x, y, z, vx, vy, vz);
+      const k2 = derivatives(
+        x + 0.5 * dt * k1[0], y + 0.5 * dt * k1[1], z + 0.5 * dt * k1[2],
+        vx + 0.5 * dt * k1[3], vy + 0.5 * dt * k1[4], vz + 0.5 * dt * k1[5]
+      );
+      const k3 = derivatives(
+        x + 0.5 * dt * k2[0], y + 0.5 * dt * k2[1], z + 0.5 * dt * k2[2],
+        vx + 0.5 * dt * k2[3], vy + 0.5 * dt * k2[4], vz + 0.5 * dt * k2[5]
+      );
+      const k4 = derivatives(
+        x + dt * k3[0], y + dt * k3[1], z + dt * k3[2],
+        vx + dt * k3[3], vy + dt * k3[4], vz + dt * k3[5]
+      );
+
+      p.x += (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+      p.y += (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+      p.z += (dt / 6) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+
+      p.vx += (dt / 6) * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+      p.vy += (dt / 6) * (k1[4] + 2 * k2[4] + 2 * k3[4] + k4[4]);
+      p.vz += (dt / 6) * (k1[5] + 2 * k2[5] + 2 * k3[5] + k4[5]);
+    }
+
+    function stepVerlet(p, dt) {
+      const a0 = getPotentialAndAccel(p.x, p.y, p.z, p.vx, p.vy, p.vz);
+      
+      const x_new = p.x + p.vx * dt + 0.5 * a0.ax * dt * dt;
+      const y_new = p.y + p.vy * dt + 0.5 * a0.ay * dt * dt;
+      const z_new = p.z + p.vz * dt + 0.5 * a0.az * dt * dt;
+
+      const a1 = getPotentialAndAccel(x_new, y_new, z_new, p.vx, p.vy, p.vz);
+
+      p.vx += 0.5 * (a0.ax + a1.ax) * dt;
+      p.vy += 0.5 * (a0.ay + a1.ay) * dt;
+      p.vz += 0.5 * (a0.az + a1.az) * dt;
+
+      p.x = x_new;
+      p.y = y_new;
+      p.z = z_new;
+    }
+
+    let scene, camera, renderer, controls;
+    let axesGroup, equipotentialGroup, barBodyMesh, corotationRingGroup, skyGridGroup;
+    let particleMeshes = [];
+
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x020617, 0.025);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(7, 6, 9);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setClearColor(0x020617, 1);
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+      dirLight.position.set(10, 15, 10);
+      scene.add(dirLight);
+
+      const dirLight2 = new THREE.DirectionalLight(0xf43f5e, 0.6);
+      dirLight2.position.set(-10, -10, -5);
+      scene.add(dirLight2);
+
+      createStarfield();
+      createAxes();
+      createSkyGrid();
+      createBarBodyMesh();
+      updateEquipotentialWireframe();
+      updateRotationUI();
+
+      window.addEventListener('resize', onWindowResize);
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => onWindowResize());
+        ro.observe(container);
+      }
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function createStarfield() {
+      const count = 1200;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        const r = 40 + Math.random() * 90;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+
+        colors[i * 3] = 0.4 + Math.random() * 0.6;
+        colors[i * 3 + 1] = 0.6 + Math.random() * 0.4;
+        colors[i * 3 + 2] = 1.0;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.9,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.6
+      });
+
+      scene.add(new THREE.Points(geometry, material));
+    }
+
+    function createAxes() {
+      if (axesGroup) scene.remove(axesGroup);
+      axesGroup = new THREE.Group();
+
+      const length = 5.0;
+      const xMat = new THREE.LineBasicMaterial({ color: 0xef4444 });
+      const xGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-length, 0, 0),
+        new THREE.Vector3(length, 0, 0)
+      ]);
+      axesGroup.add(new THREE.Line(xGeom, xMat));
+
+      const yMat = new THREE.LineBasicMaterial({ color: 0x22c55e });
+      const yGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -length, 0),
+        new THREE.Vector3(0, length, 0)
+      ]);
+      axesGroup.add(new THREE.Line(yGeom, yMat));
+
+      const zMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+      const zGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, -length),
+        new THREE.Vector3(0, 0, length)
+      ]);
+      axesGroup.add(new THREE.Line(zGeom, zMat));
+
+      axesGroup.visible = state.showAxes;
+      scene.add(axesGroup);
+    }
+
+    function createSkyGrid() {
+      skyGridGroup = new THREE.Group();
+      const grid = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+      grid.rotation.x = Math.PI / 2;
+      grid.position.z = -0.01;
+      skyGridGroup.add(grid);
+      scene.add(skyGridGroup);
+    }
+
+    function updateRotationUI() {
+      const isRotating = state.omegaP > 0;
+
+      // Show/Hide bar specific controls based on rotation
+      const btnFrameMode = document.getElementById('btn-frame-mode');
+      const frameSep = document.getElementById('frame-sep');
+      const toggleBarMesh = document.getElementById('toggle-bar-mesh');
+
+      if (isRotating) {
+        btnFrameMode.classList.remove('hidden');
+        frameSep.classList.remove('hidden');
+        toggleBarMesh.classList.remove('hidden');
+        document.getElementById('hud-energy-label').textContent = 'E_J (Jacobi)';
+      } else {
+        btnFrameMode.classList.add('hidden');
+        frameSep.classList.add('hidden');
+        toggleBarMesh.classList.add('hidden');
+        document.getElementById('hud-energy-label').textContent = 'Energy';
+      }
+
+      if (barBodyMesh) {
+        barBodyMesh.visible = isRotating && state.showBarMesh;
+      }
+    }
+
+    function createBarBodyMesh() {
+      if (barBodyMesh) scene.remove(barBodyMesh);
+      if (corotationRingGroup) scene.remove(corotationRingGroup);
+
+      barBodyMesh = new THREE.Group();
+      barBodyMesh.renderOrder = 1; // Render low order so lines/particles rendered over it remain distinct
+
+      // Configure transparent depth properties so bar body transparent volume doesn't occlude particle tracks
+      const barGeom = new THREE.SphereGeometry(1, 32, 24);
+      const barMat = new THREE.MeshStandardMaterial({
+        color: 0xf43f5e,
+        emissive: 0x881337,
+        emissiveIntensity: 0.5,
+        roughness: 0.3,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.18,
+        depthWrite: false // CRITICAL FIX: Disable depth write so particle trails inside/behind are clearly visible
+      });
+
+      const barEllipsoid = new THREE.Mesh(barGeom, barMat);
+      barEllipsoid.scale.set(3.0, 3.0 * state.q1, 3.0 * state.q2);
+      barBodyMesh.add(barEllipsoid);
+
+      const coreGeom = new THREE.SphereGeometry(0.8, 24, 20);
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0xfcb38b,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.7,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false // CRITICAL FIX: Core mesh depth write disabled to prevent line occlusion
+      });
+      const coreEllipsoid = new THREE.Mesh(coreGeom, coreMat);
+      coreEllipsoid.scale.set(1.0, state.q1, state.q2);
+      barBodyMesh.add(coreEllipsoid);
+
+      barBodyMesh.visible = (state.omegaP > 0) && state.showBarMesh;
+      scene.add(barBodyMesh);
+
+      // Corotation features
+      corotationRingGroup = new THREE.Group();
+      if (state.omegaP > 0) {
+        const r_cr = state.v0 / state.omegaP;
+        document.getElementById('cr-indicator').classList.remove('hidden');
+        document.getElementById('cr-val').textContent = r_cr.toFixed(2);
+
+        const circleGeom = new THREE.BufferGeometry();
+        const pts = [];
+        const segs = 64;
+        for (let i = 0; i <= segs; i++) {
+          const theta = (i / segs) * Math.PI * 2;
+          pts.push(new THREE.Vector3(r_cr * Math.cos(theta), r_cr * Math.sin(theta), 0));
+        }
+        circleGeom.setFromPoints(pts);
+
+        const circleMat = new THREE.LineDashedMaterial({
+          color: 0xf59e0b,
+          dashSize: 0.2,
+          gapSize: 0.1,
+          transparent: true,
+          opacity: 0.5
+        });
+        const crLine = new THREE.Line(circleGeom, circleMat);
+        crLine.computeLineDistances();
+        corotationRingGroup.add(crLine);
+
+        const lPoints = [
+          { name: 'L1', pos: new THREE.Vector3(r_cr, 0, 0), color: 0xef4444 },
+          { name: 'L2', pos: new THREE.Vector3(-r_cr, 0, 0), color: 0xef4444 },
+          { name: 'L4', pos: new THREE.Vector3(0, r_cr, 0), color: 0x10b981 },
+          { name: 'L5', pos: new THREE.Vector3(0, -r_cr, 0), color: 0x10b981 }
+        ];
+
+        lPoints.forEach(lp => {
+          const lGeom = new THREE.SphereGeometry(0.08, 12, 12);
+          const lMat = new THREE.MeshBasicMaterial({ color: lp.color });
+          const lMesh = new THREE.Mesh(lGeom, lMat);
+          lMesh.position.copy(lp.pos);
+          corotationRingGroup.add(lMesh);
+        });
+      } else {
+        document.getElementById('cr-indicator').classList.add('hidden');
+      }
+
+      scene.add(corotationRingGroup);
+      updateRotationUI();
+    }
+
+    function updateEquipotentialWireframe() {
+      if (equipotentialGroup) {
+        equipotentialGroup.traverse((child) => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+            else child.material.dispose();
+          }
+        });
+        scene.remove(equipotentialGroup);
+      }
+
+      equipotentialGroup = new THREE.Group();
+      
+      const radii = [1.5, 3.0, 5.0];
+      radii.forEach((r, index) => {
+        const geom = new THREE.SphereGeometry(1, 24, 16);
+        geom.scale(r, r * state.q1, r * state.q2);
+        const wireGeom = new THREE.WireframeGeometry(geom);
+        
+        const mat = new THREE.LineBasicMaterial({
+          color: index === 0 ? 0x06b6d4 : (index === 1 ? 0x3b82f6 : 0x6366f1),
+          transparent: true,
+          opacity: 0.18 - index * 0.03
+        });
+        
+        const wireframe = new THREE.LineSegments(wireGeom, mat);
+        equipotentialGroup.add(wireframe);
+      });
+
+      equipotentialGroup.visible = state.showWireframe;
+      scene.add(equipotentialGroup);
+    }
+
+    function initParticles() {
+      particleMeshes.forEach(pObj => {
+        scene.remove(pObj.mesh);
+        scene.remove(pObj.trailLine);
+        pObj.mesh.geometry.dispose();
+        pObj.mesh.material.dispose();
+        pObj.trailGeom.dispose();
+        pObj.trailMat.dispose();
+      });
+      particleMeshes = [];
+      state.particles = [];
+      state.poincarePoints = [];
+      state.energyHistory = [];
+      state.angularHistory = [];
+
+      const count = state.particleCount;
+
+      for (let i = 0; i < count; i++) {
+        let pData;
+        if (i === 0) {
+          pData = { ...state.ic };
+        } else {
+          const dr = 0.05 * (Math.random() - 0.5);
+          const dv = 0.05 * (Math.random() - 0.5);
+          pData = {
+            x: state.ic.x + dr,
+            y: state.ic.y + dr,
+            z: state.ic.z + dr,
+            vx: state.ic.vx + dv,
+            vy: state.ic.vy + dv,
+            vz: state.ic.vz + dv
+          };
+        }
+
+        pData.prevZ = pData.z;
+        pData.history = [];
+        state.particles.push(pData);
+
+        const sphereGeom = new THREE.SphereGeometry(0.08, 16, 16);
+        const sphereMat = new THREE.MeshStandardMaterial({
+          color: getParticleBaseColor(i),
+          emissive: getParticleBaseColor(i),
+          emissiveIntensity: 0.8,
+          roughness: 0.2
+        });
+        const mesh = new THREE.Mesh(sphereGeom, sphereMat);
+        mesh.renderOrder = 100; // Particle head stays rendered on top
+        scene.add(mesh);
+
+        const maxPts = state.maxTrailLength;
+        const trailGeom = new THREE.BufferGeometry();
+        const positions = new Float32Array(maxPts * 3);
+        const colors = new Float32Array(maxPts * 3);
+
+        trailGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        trailGeom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        trailGeom.setDrawRange(0, 0);
+
+        const trailMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.95,
+          depthWrite: false // Ensures clean rendering through semi-transparent bar body
+        });
+
+        const trailLine = new THREE.Line(trailGeom, trailMat);
+        trailLine.renderOrder = 90; // Trail renders over bar body
+        scene.add(trailLine);
+
+        particleMeshes.push({
+          mesh,
+          trailLine,
+          trailGeom,
+          trailMat,
+          positions,
+          colors
+        });
+      }
+
+      const p0 = state.particles[0];
+      const res0 = getPotentialAndAccel(p0.x, p0.y, p0.z, p0.vx, p0.vy, p0.vz);
+      const v_sq = p0.vx * p0.vx + p0.vy * p0.vy + p0.vz * p0.vz;
+      const om_p = state.omegaP;
+      state.e0 = 0.5 * v_sq + res0.phi - 0.5 * om_p * om_p * (p0.x * p0.x + p0.y * p0.y);
+
+      renderPoincareCanvas();
+    }
+
+    function getParticleBaseColor(index) {
+      const palette = [0x38bdf8, 0xf43f5e, 0x10b981, 0xf59e0b, 0xa855f7, 0x06b6d4, 0xec4899];
+      return palette[index % palette.length];
+    }
+
+    function updateParticleTrailBuffer(pIdx) {
+      const p = state.particles[pIdx];
+      const pMeshObj = particleMeshes[pIdx];
+      const history = p.history;
+      const len = history.length;
+
+      if (len === 0) return;
+
+      const posAttr = pMeshObj.trailGeom.attributes.position;
+      const colAttr = pMeshObj.trailGeom.attributes.color;
+
+      const baseRGB = new THREE.Color(getParticleBaseColor(pIdx));
+      const om_p = state.omegaP;
+      const isInertial = (state.frameMode === 'inertial');
+
+      let writeIdx = 0;
+      for (let i = 0; i < len; i++) {
+        const pt = history[i];
+
+        let renderX = pt.x;
+        let renderY = pt.y;
+        let renderZ = pt.z;
+
+        if (isInertial && om_p > 0) {
+          const rotAngle = om_p * pt.t;
+          const cosA = Math.cos(rotAngle);
+          const sinA = Math.sin(rotAngle);
+          renderX = pt.x * cosA - pt.y * sinA;
+          renderY = pt.x * sinA + pt.y * cosA;
+        }
+
+        posAttr.setXYZ(writeIdx, renderX, renderY, renderZ);
+
+        let r = baseRGB.r, g = baseRGB.g, b = baseRGB.b;
+
+        if (state.colorMode === 'speed') {
+          const speed = Math.sqrt(pt.vx * pt.vx + pt.vy * pt.vy + pt.vz * pt.vz);
+          const normSpeed = Math.min(speed / 2.0, 1.0);
+          r = normSpeed;
+          g = 1.0 - normSpeed;
+          b = 0.3;
+        } else if (state.colorMode === 'lz') {
+          const lz = pt.x * pt.vy - pt.y * pt.vx;
+          const normLz = Math.min(Math.abs(lz) / 2.0, 1.0);
+          if (lz >= 0) { r = 0.2; g = normLz; b = 1.0; }
+          else { r = 1.0; g = 0.2; b = 0.2; }
+        }
+
+        const alphaFade = 0.3 + 0.7 * (i / len);
+        colAttr.setXYZ(writeIdx, r * alphaFade, g * alphaFade, b * alphaFade);
+
+        writeIdx++;
+      }
+
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+      pMeshObj.trailGeom.setDrawRange(0, writeIdx);
+
+      const lastPt = history[len - 1];
+      let headX = lastPt.x;
+      let headY = lastPt.y;
+      let headZ = lastPt.z;
+
+      if (isInertial && om_p > 0) {
+        const rotAngle = om_p * lastPt.t;
+        headX = lastPt.x * Math.cos(rotAngle) - lastPt.y * Math.sin(rotAngle);
+        headY = lastPt.x * Math.sin(rotAngle) + lastPt.y * Math.cos(rotAngle);
+      }
+
+      pMeshObj.mesh.position.set(headX, headY, headZ);
+    }
+
+    function checkPoincareCrossing(p) {
+      if (p.prevZ < 0 && p.z >= 0 && p.vz > 0) {
+        const alpha = -p.prevZ / (p.z - p.prevZ);
+        const r_cross = Math.sqrt(p.x * p.x + p.y * p.y);
+        const vr_cross = (p.x * p.vx + p.y * p.vy) / (r_cross || 1.0);
+
+        state.poincarePoints.push({
+          x: p.x,
+          vx: p.vx,
+          y: p.y,
+          vy: p.vy,
+          r: r_cross,
+          vr: vr_cross
+        });
+
+        if (state.poincarePoints.length > 3000) {
+          state.poincarePoints.shift();
+        }
+
+        renderPoincareCanvas();
+      }
+      p.prevZ = p.z;
+    }
+
+    function renderPoincareCanvas() {
+      const canvas = document.getElementById('poincare-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.clientHeight * window.devicePixelRatio;
+
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+      ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+      ctx.stroke();
+
+      const pts = state.poincarePoints;
+      document.getElementById('poincare-count').textContent = pts.length;
+
+      if (pts.length === 0) return;
+
+      const mode = state.poincareAxis;
+      ctx.fillStyle = '#38bdf8';
+
+      const scaleX = w / 8.0;
+      const scaleY = h / 4.0;
+
+      for (let i = 0; i < pts.length; i++) {
+        let px = 0, py = 0;
+        if (mode === 'x-vx') {
+          px = w / 2 + pts[i].x * scaleX;
+          py = h / 2 - pts[i].vx * scaleY;
+        } else if (mode === 'r-vr') {
+          px = pts[i].r * (scaleX * 0.8);
+          py = h / 2 - pts[i].vr * scaleY;
+        } else if (mode === 'y-vy') {
+          px = w / 2 + pts[i].y * scaleX;
+          py = h / 2 - pts[i].vy * scaleY;
+        }
+
+        ctx.beginPath();
+        ctx.arc(px, py, 1.8 * window.devicePixelRatio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function renderEnergyCanvas() {
+      const canvas = document.getElementById('energy-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.clientHeight * window.devicePixelRatio;
+
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      const hist = state.energyHistory;
+      if (hist.length < 2) return;
+
+      // CRITICAL FIX: Calculate dynamic bounds across Ek, Ep, and Etot/Ej to guarantee all 3 are visible in all presets
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+
+      for (let i = 0; i < hist.length; i++) {
+        const item = hist[i];
+        if (item.ek < minVal) minVal = item.ek;
+        if (item.ek > maxVal) maxVal = item.ek;
+        if (item.ep < minVal) minVal = item.ep;
+        if (item.ep > maxVal) maxVal = item.ep;
+        if (item.ej < minVal) minVal = item.ej;
+        if (item.ej > maxVal) maxVal = item.ej;
+      }
+
+      if (!isFinite(minVal) || !isFinite(maxVal)) return;
+
+      if (Math.abs(maxVal - minVal) < 1e-4) {
+        minVal -= 0.5;
+        maxVal += 0.5;
+      }
+
+      // Add 15% padding top and bottom so lines don't hit the strict edge
+      const padRange = (maxVal - minVal) * 0.15 || 0.1;
+      minVal -= padRange;
+      maxVal += padRange;
+      const valRange = maxVal - minVal;
+
+      const topPad = 8 * window.devicePixelRatio;
+      const drawHeight = h - 2 * topPad;
+
+      ctx.lineWidth = 1.5 * window.devicePixelRatio;
+
+      // Draw Kinetic Energy Ek (amber)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h - topPad - ((hist[i].ek - minVal) / valRange) * drawHeight;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw Potential Energy Ep (cyan)
+      ctx.strokeStyle = '#06b6d4';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h - topPad - ((hist[i].ep - minVal) / valRange) * drawHeight;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw Total / Jacobi Energy Etot/Ej (emerald) - ALWAYS VISIBLE NOW
+      ctx.strokeStyle = '#10b981';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h - topPad - ((hist[i].ej - minVal) / valRange) * drawHeight;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function renderAngularCanvas() {
+      const canvas = document.getElementById('angular-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.clientHeight * window.devicePixelRatio;
+
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      const hist = state.angularHistory;
+      if (hist.length < 2) return;
+
+      // Dynamic auto-scale for angular momentum plot
+      let maxAbs = 0.5;
+      for (let i = 0; i < hist.length; i++) {
+        maxAbs = Math.max(maxAbs, Math.abs(hist[i].lx), Math.abs(hist[i].ly), Math.abs(hist[i].lz));
+      }
+      maxAbs *= 1.2; // 20% breathing space
+
+      ctx.lineWidth = 1.5 * window.devicePixelRatio;
+
+      // Reference zero axis
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h / 2 - (hist[i].lx / maxAbs) * (h / 2 - 6 * window.devicePixelRatio);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = '#22c55e';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h / 2 - (hist[i].ly / maxAbs) * (h / 2 - 6 * window.devicePixelRatio);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = '#3b82f6';
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1 || 1)) * w;
+        const y = h / 2 - (hist[i].lz / maxAbs) * (h / 2 - 6 * window.devicePixelRatio);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    let frameCount = 0;
+    let fpsTimer = performance.now();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      frameCount++;
+      if (now - fpsTimer >= 1000) {
+        document.getElementById('fps-counter').textContent = frameCount;
+        frameCount = 0;
+        fpsTimer = now;
+      }
+
+      if (state.isPlaying) {
+        const stepsPerFrame = 4;
+        const subDt = state.dt / stepsPerFrame;
+
+        for (let step = 0; step < stepsPerFrame; step++) {
+          state.simTime += subDt;
+
+          for (let i = 0; i < state.particles.length; i++) {
+            const p = state.particles[i];
+
+            if (state.integrator === 'rk4') {
+              stepRK4(p, subDt);
+            } else {
+              stepVerlet(p, subDt);
+            }
+
+            checkPoincareCrossing(p);
+
+            p.history.push({
+              x: p.x, y: p.y, z: p.z,
+              vx: p.vx, vy: p.vy, vz: p.vz,
+              t: state.simTime
+            });
+
+            if (p.history.length > state.maxTrailLength) {
+              p.history.shift();
+            }
+          }
+        }
+
+        const p0 = state.particles[0];
+        if (p0) {
+          const res = getPotentialAndAccel(p0.x, p0.y, p0.z, p0.vx, p0.vy, p0.vz);
+          const v_sq = p0.vx * p0.vx + p0.vy * p0.vy + p0.vz * p0.vz;
+          const ek = 0.5 * v_sq;
+          const ep = res.phi;
+          const om_p = state.omegaP;
+          
+          const ej = ek + ep - 0.5 * om_p * om_p * (p0.x * p0.x + p0.y * p0.y);
+
+          const lx = p0.y * p0.vz - p0.z * p0.vy;
+          const ly = p0.z * p0.vx - p0.x * p0.vz;
+          const lz = p0.x * p0.vy - p0.y * p0.vx;
+
+          document.getElementById('hud-energy').textContent = ej.toFixed(4);
+          document.getElementById('val-ek').textContent = ek.toFixed(2);
+          document.getElementById('val-ep').textContent = ep.toFixed(2);
+          document.getElementById('val-etot').textContent = ej.toFixed(2);
+
+          document.getElementById('val-lx').textContent = lx.toFixed(2);
+          document.getElementById('val-ly').textContent = ly.toFixed(2);
+          document.getElementById('val-lz').textContent = lz.toFixed(2);
+
+          if (state.e0 !== null && state.e0 !== 0) {
+            const drift = Math.abs((ej - state.e0) / state.e0) * 100.0;
+            document.getElementById('hud-drift').textContent = drift.toFixed(3) + '%';
+          }
+
+          state.energyHistory.push({ ek, ep, ej });
+          if (state.energyHistory.length > 100) state.energyHistory.shift();
+
+          state.angularHistory.push({ lx, ly, lz });
+          if (state.angularHistory.length > 100) state.angularHistory.shift();
+
+          renderEnergyCanvas();
+          renderAngularCanvas();
+        }
+
+        document.getElementById('hud-points').textContent = p0 ? p0.history.length : 0;
+      }
+
+      // Dynamic Rotation Updates
+      const om_p = state.omegaP;
+      if (om_p > 0) {
+        if (state.frameMode === 'inertial') {
+          const barRotation = om_p * state.simTime;
+          if (barBodyMesh) barBodyMesh.rotation.z = barRotation;
+          if (equipotentialGroup) equipotentialGroup.rotation.z = barRotation;
+          if (corotationRingGroup) corotationRingGroup.rotation.z = barRotation;
+          if (axesGroup) axesGroup.rotation.z = barRotation;
+          if (skyGridGroup) skyGridGroup.rotation.z = 0;
+        } else {
+          if (barBodyMesh) barBodyMesh.rotation.z = 0;
+          if (equipotentialGroup) equipotentialGroup.rotation.z = 0;
+          if (corotationRingGroup) corotationRingGroup.rotation.z = 0;
+          if (axesGroup) axesGroup.rotation.z = 0;
+          if (skyGridGroup) skyGridGroup.rotation.z = -om_p * state.simTime;
+        }
+      } else {
+        if (barBodyMesh) barBodyMesh.rotation.z = 0;
+        if (equipotentialGroup) equipotentialGroup.rotation.z = 0;
+        if (corotationRingGroup) corotationRingGroup.rotation.z = 0;
+        if (axesGroup) axesGroup.rotation.z = 0;
+        if (skyGridGroup) skyGridGroup.rotation.z = 0;
+      }
+
+      for (let i = 0; i < particleMeshes.length; i++) {
+        updateParticleTrailBuffer(i);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function setPreset(presetKey) {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === presetKey);
+      });
+
+      switch (presetKey) {
+        case 'spherical-rosette':
+          state.q1 = 1.00; state.q2 = 1.00; state.omegaP = 0.0; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.5, y: 0.0, z: 0.0, vx: 0.0, vy: 0.65, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Spherical Log';
+          break;
+
+        case 'axisymmetric-box':
+          state.q1 = 1.00; state.q2 = 0.40; state.omegaP = 0.0; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.0, y: 0.0, z: 1.2, vx: 0.2, vy: 0.0, vz: 0.1 };
+          document.getElementById('potential-type-tag').textContent = 'Axisymmetric';
+          break;
+
+        case 'axisymmetric-tube':
+          state.q1 = 1.00; state.q2 = 0.40; state.omegaP = 0.0; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.0, y: 0.0, z: 0.5, vx: 0.0, vy: 0.7, vz: 0.1 };
+          document.getElementById('potential-type-tag').textContent = 'Short Axis Tube';
+          break;
+
+        case 'triaxial-box':
+          state.q1 = 0.80; state.q2 = 0.60; state.omegaP = 0.0; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.2, y: 0.2, z: 0.3, vx: 0.05, vy: 0.05, vz: 0.05 };
+          document.getElementById('potential-type-tag').textContent = 'Triaxial Box';
+          break;
+
+        case 'triaxial-sat':
+          state.q1 = 0.80; state.q2 = 0.60; state.omegaP = 0.0; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.0, y: 0.0, z: 0.2, vx: 0.0, vy: 0.65, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Short Axis Tube';
+          break;
+
+        case 'bar-x1':
+          state.q1 = 0.40; state.q2 = 0.35; state.omegaP = 0.35; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.2, y: 0.0, z: 0.0, vx: 0.0, vy: 0.38, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Bar x₁ (Major)';
+          break;
+
+        case 'bar-x2':
+          state.q1 = 0.40; state.q2 = 0.35; state.omegaP = 0.35; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 0.0, y: 0.8, z: 0.0, vx: 0.52, vy: 0.0, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Bar x₂ (Perp)';
+          break;
+
+        case 'bar-x4':
+          state.q1 = 0.40; state.q2 = 0.35; state.omegaP = 0.35; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 1.8, y: 0.0, z: 0.0, vx: 0.0, vy: -0.72, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Bar x₄ (Retro)';
+          break;
+
+        case 'bar-chaos':
+          state.q1 = 0.40; state.q2 = 0.35; state.omegaP = 0.35; state.rc = 1.0; state.v0 = 1.0;
+          state.ic = { x: 2.75, y: 0.1, z: 0.0, vx: 0.12, vy: 0.42, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Bar Chaos';
+          break;
+
+        case 'multi-family':
+          state.q1 = 0.40; state.q2 = 0.35; state.omegaP = 0.35; state.rc = 1.0; state.v0 = 1.0;
+          state.particleCount = 12;
+          state.ic = { x: 2.2, y: 0.0, z: 0.0, vx: 0.0, vy: 0.38, vz: 0.0 };
+          document.getElementById('potential-type-tag').textContent = 'Multi Cloud';
+          break;
+      }
+
+      updateSlidersFromState();
+      updateEquipotentialWireframe();
+      createBarBodyMesh();
+      initParticles();
+    }
+
+    function updateSlidersFromState() {
+      document.getElementById('slider-omega').value = state.omegaP;
+      document.getElementById('val-omega').textContent = state.omegaP.toFixed(2);
+
+      document.getElementById('slider-q1').value = state.q1;
+      document.getElementById('val-q1').textContent = state.q1.toFixed(2);
+
+      document.getElementById('slider-q2').value = state.q2;
+      document.getElementById('val-q2').textContent = state.q2.toFixed(2);
+
+      document.getElementById('slider-rc').value = state.rc;
+      document.getElementById('val-rc').textContent = state.rc.toFixed(1);
+
+      document.getElementById('slider-v0').value = state.v0;
+      document.getElementById('val-v0').textContent = state.v0.toFixed(1);
+
+      document.getElementById('slider-particles').value = state.particleCount;
+      document.getElementById('val-particles').textContent = state.particleCount;
+
+      document.getElementById('input-x').value = state.ic.x;
+      document.getElementById('input-y').value = state.ic.y;
+      document.getElementById('input-z').value = state.ic.z;
+      document.getElementById('input-vx').value = state.ic.vx;
+      document.getElementById('input-vy').value = state.ic.vy;
+      document.getElementById('input-vz').value = state.ic.vz;
+
+      updateRotationUI();
+    }
+
+    function setupUIEvents() {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => setPreset(btn.dataset.preset));
+      });
+
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.isPlaying = !state.isPlaying;
+        document.getElementById('label-play').textContent = state.isPlaying ? 'Pause' : 'Play';
+        document.getElementById('btn-play').classList.toggle('text-emerald-400', state.isPlaying);
+        document.getElementById('btn-play').classList.toggle('text-amber-400', !state.isPlaying);
+      });
+
+      document.getElementById('btn-step').addEventListener('click', () => {
+        state.isPlaying = false;
+        document.getElementById('label-play').textContent = 'Play';
+        for (let i = 0; i < state.particles.length; i++) {
+          const p = state.particles[i];
+          stepRK4(p, state.dt);
+          p.history.push({ x: p.x, y: p.y, z: p.z, vx: p.vx, vy: p.vy, vz: p.vz, t: state.simTime });
+        }
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        state.simTime = 0.0;
+        initParticles();
+      });
+
+      document.getElementById('btn-frame-mode').addEventListener('click', () => {
+        state.frameMode = (state.frameMode === 'corotating') ? 'inertial' : 'corotating';
+        document.getElementById('label-frame-mode').textContent = (state.frameMode === 'corotating') ? 'Frame: Corotating' : 'Frame: Inertial';
+        document.getElementById('btn-frame-mode').classList.toggle('active', state.frameMode === 'corotating');
+      });
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        state.theme = (state.theme === 'dark') ? 'light' : 'dark';
+        document.body.classList.toggle('light-mode', state.theme === 'light');
+        document.getElementById('icon-theme-dark').classList.toggle('hidden', state.theme === 'dark');
+        document.getElementById('icon-theme-light').classList.toggle('hidden', state.theme === 'light');
+        
+        const clearCol = (state.theme === 'dark') ? 0x020617 : 0xf8fafc;
+        renderer.setClearColor(clearCol, 1);
+        scene.fog.color.setHex(clearCol);
+      });
+
+      document.getElementById('slider-omega').addEventListener('input', (e) => {
+        state.omegaP = parseFloat(e.target.value);
+        document.getElementById('val-omega').textContent = state.omegaP.toFixed(2);
+        createBarBodyMesh();
+        updateRotationUI();
+      });
+
+      document.getElementById('slider-q1').addEventListener('input', (e) => {
+        state.q1 = parseFloat(e.target.value);
+        document.getElementById('val-q1').textContent = state.q1.toFixed(2);
+        updateEquipotentialWireframe();
+        createBarBodyMesh();
+      });
+
+      document.getElementById('slider-q2').addEventListener('input', (e) => {
+        state.q2 = parseFloat(e.target.value);
+        document.getElementById('val-q2').textContent = state.q2.toFixed(2);
+        updateEquipotentialWireframe();
+        createBarBodyMesh();
+      });
+
+      document.getElementById('slider-rc').addEventListener('input', (e) => {
+        state.rc = parseFloat(e.target.value);
+        document.getElementById('val-rc').textContent = state.rc.toFixed(1);
+        updateEquipotentialWireframe();
+      });
+
+      document.getElementById('slider-v0').addEventListener('input', (e) => {
+        state.v0 = parseFloat(e.target.value);
+        document.getElementById('val-v0').textContent = state.v0.toFixed(1);
+        createBarBodyMesh();
+      });
+
+      document.getElementById('slider-particles').addEventListener('input', (e) => {
+        state.particleCount = parseInt(e.target.value, 10);
+        document.getElementById('val-particles').textContent = state.particleCount;
+        initParticles();
+      });
+
+      document.getElementById('slider-trail-len').addEventListener('input', (e) => {
+        state.maxTrailLength = parseInt(e.target.value, 10);
+        document.getElementById('val-trail-len').textContent = state.maxTrailLength;
+      });
+
+      document.getElementById('slider-dt').addEventListener('input', (e) => {
+        state.dt = parseFloat(e.target.value);
+        document.getElementById('val-dt').textContent = state.dt.toFixed(3);
+      });
+
+      document.getElementById('select-integrator').addEventListener('change', (e) => {
+        state.integrator = e.target.value;
+      });
+
+      document.getElementById('select-color-mode').addEventListener('change', (e) => {
+        state.colorMode = e.target.value;
+      });
+
+      document.getElementById('btn-apply-ic').addEventListener('click', () => {
+        state.ic.x = parseFloat(document.getElementById('input-x').value) || 0;
+        state.ic.y = parseFloat(document.getElementById('input-y').value) || 0;
+        state.ic.z = parseFloat(document.getElementById('input-z').value) || 0;
+        state.ic.vx = parseFloat(document.getElementById('input-vx').value) || 0;
+        state.ic.vy = parseFloat(document.getElementById('input-vy').value) || 0;
+        state.ic.vz = parseFloat(document.getElementById('input-vz').value) || 0;
+        initParticles();
+      });
+
+      document.getElementById('btn-random-ic').addEventListener('click', () => {
+        state.ic.x = (Math.random() * 3.0 + 0.5) * (Math.random() > 0.5 ? 1 : -1);
+        state.ic.y = (Math.random() * 2.0) * (Math.random() > 0.5 ? 1 : -1);
+        state.ic.z = (Math.random() * 0.5) * (Math.random() > 0.5 ? 1 : -1);
+        state.ic.vx = (Math.random() * 0.5) * (Math.random() > 0.5 ? 1 : -1);
+        state.ic.vy = (Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1);
+        state.ic.vz = (Math.random() * 0.2) * (Math.random() > 0.5 ? 1 : -1);
+
+        document.getElementById('input-x').value = state.ic.x.toFixed(2);
+        document.getElementById('input-y').value = state.ic.y.toFixed(2);
+        document.getElementById('input-z').value = state.ic.z.toFixed(2);
+        document.getElementById('input-vx').value = state.ic.vx.toFixed(2);
+        document.getElementById('input-vy').value = state.ic.vy.toFixed(2);
+        document.getElementById('input-vz').value = state.ic.vz.toFixed(2);
+
+        initParticles();
+      });
+
+      // Camera view shortcuts
+      document.getElementById('cam-free').addEventListener('click', () => {
+        camera.position.set(7, 6, 9);
+        camera.up.set(0, 1, 0);
+        controls.target.set(0, 0, 0);
+      });
+      document.getElementById('cam-xy').addEventListener('click', () => {
+        camera.position.set(0, 0, 10);
+        camera.up.set(0, 1, 0);
+        controls.target.set(0, 0, 0);
+      });
+      document.getElementById('cam-xz').addEventListener('click', () => {
+        camera.position.set(0, -10, 0);
+        camera.up.set(0, 0, 1);
+        controls.target.set(0, 0, 0);
+      });
+      document.getElementById('cam-yz').addEventListener('click', () => {
+        camera.position.set(10, 0, 0);
+        camera.up.set(0, 0, 1);
+        controls.target.set(0, 0, 0);
+      });
+
+      // Mesh toggles
+      document.getElementById('toggle-bar-mesh').addEventListener('click', (e) => {
+        state.showBarMesh = !state.showBarMesh;
+        if (barBodyMesh) barBodyMesh.visible = state.showBarMesh && (state.omegaP > 0);
+        e.target.classList.toggle('active', state.showBarMesh);
+      });
+      document.getElementById('toggle-wireframe').addEventListener('click', (e) => {
+        state.showWireframe = !state.showWireframe;
+        if (equipotentialGroup) equipotentialGroup.visible = state.showWireframe;
+        e.target.classList.toggle('active', state.showWireframe);
+      });
+      document.getElementById('toggle-axes').addEventListener('click', (e) => {
+        state.showAxes = !state.showAxes;
+        if (axesGroup) axesGroup.visible = state.showAxes;
+        e.target.classList.toggle('active', state.showAxes);
+      });
+
+      // Analytics controls
+      document.getElementById('btn-clear-poincare').addEventListener('click', () => {
+        state.poincarePoints = [];
+        renderPoincareCanvas();
+      });
+      document.getElementById('select-poincare-axis').addEventListener('change', (e) => {
+        state.poincareAxis = e.target.value;
+        renderPoincareCanvas();
+      });
+
+      // Sidebar collapse controls
+      const leftSidebar = document.getElementById('left-sidebar');
+      const rightSidebar = document.getElementById('right-sidebar');
+      const btnOpenLeft = document.getElementById('btn-open-left-sidebar');
+      const btnOpenRight = document.getElementById('btn-open-right-sidebar');
+
+      const toggleLeft = () => {
+        leftSidebar.classList.toggle('-ml-80');
+        btnOpenLeft.classList.toggle('hidden');
+      };
+      const toggleRight = () => {
+        rightSidebar.classList.toggle('-mr-80');
+        btnOpenRight.classList.toggle('hidden');
+      };
+
+      document.getElementById('toggle-left-sidebar').addEventListener('click', toggleLeft);
+      document.getElementById('hdr-toggle-left').addEventListener('click', toggleLeft);
+      btnOpenLeft.addEventListener('click', toggleLeft);
+
+      document.getElementById('toggle-right-sidebar').addEventListener('click', toggleRight);
+      document.getElementById('hdr-toggle-right').addEventListener('click', toggleRight);
+      btnOpenRight.addEventListener('click', toggleRight);
+
+      // Theory Modal logic
+      const modal = document.getElementById('theory-modal');
+      document.getElementById('btn-theory-modal').addEventListener('click', () => modal.classList.remove('hidden'));
+      document.getElementById('close-theory-modal').addEventListener('click', () => modal.classList.add('hidden'));
+      document.getElementById('btn-close-modal-bottom').addEventListener('click', () => modal.classList.add('hidden'));
+    }
+
+    window.onload = function() {
+      init3D();
+      setupUIEvents();
+      initParticles();
+      animate();
+    };
+  </script>
+</body>
+</html>
